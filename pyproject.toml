@@ -18,6 +18,7 @@ dependencies = [
     "spacy>=3.5.4",
     "natasha>=1.6.0",
     "faker>=39.0.0",
+    "bert-score>=0.3.13",
 ]
 
 [tool.uv.sources]

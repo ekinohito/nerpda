@@ -56,7 +56,7 @@ class NatashaNER:
                             start = token.start
                             end = token.stop
                             
-                            result.append([tag, str(feats), start, end])
+                            result.append([tag, feats, start, end])
         
         return result
 
@@ -78,7 +78,7 @@ class RegexNER:
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
         
         # Регулярное выражение для номера свидетельства о рождении
-        # Формат: XII-АБ №123456 (римские цифры, русские буквы, номер)
+        # Формат: VII-АБ №123456 (римские цифры, русские буквы, номер)
         self.birth_cert_pattern = re.compile(r'\b(?:[IVXLCDM]+-[А-ЯЁ]{2}\s*№\d{6})\b', re.IGNORECASE)
         
         # Регулярное выражение для кода КЛАДР
@@ -124,6 +124,8 @@ class RegexNER:
             card_number = match.group().replace(' ', '').replace('-', '')
             if self.luhn_algorithm(card_number):
                 result.append(['CARD_NUMBER', 'valid_card', match.start(), match.end()])
+            else:
+                result.append(['CARD_NUMBER', 'invalid_card', match.start(), match.end()])
         
         # Поиск ОГРНИП
         for match in self.ogrnip_pattern.finditer(text):

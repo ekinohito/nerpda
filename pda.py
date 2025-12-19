@@ -53,7 +53,7 @@ class PDAnonymizer:
         except Exception:
             return word
     
-    def anonymize_name(self, name: str) -> str:
+    def anonymize_name(self, name: str, features: dict | None = None) -> str:
         """Обезличивание имени с сохранением морфологии"""
         try:
             # Проверка на корректность данных
@@ -65,7 +65,7 @@ class PDAnonymizer:
                 return "Некорректно введены данные"
             
             # Получаем морфологические характеристики оригинала
-            original_features = self._get_morph_features(name)
+            original_features = features or self._get_morph_features(name)
             
             # Генерируем случайное имя того же рода с помощью Faker
             if original_features.get('gender') == 'femn':
@@ -77,12 +77,12 @@ class PDAnonymizer:
             anonymized_name = self._inflect_word(new_name, original_features)
             
             # Возвращаем результат
-            return anonymized_name
+            return anonymized_name.capitalize()
             
         except Exception:
             return "Некорректно введены данные"
     
-    def anonymize_last_name(self, last_name: str) -> str:
+    def anonymize_last_name(self, last_name: str, features: dict | None = None) -> str:
         """Обезличивание фамилии с сохранением морфологии"""
         try:
             # Проверка на корректность данных
@@ -94,7 +94,7 @@ class PDAnonymizer:
                 return "Некорректно введены данные"
             
             # Получаем морфологические характеристики оригинала
-            original_features = self._get_morph_features(last_name)
+            original_features = features or self._get_morph_features(last_name)
             
             # Генерируем случайную фамилию того же рода с помощью Faker
             if original_features.get('gender') == 'femn':
@@ -106,7 +106,7 @@ class PDAnonymizer:
             anonymized_last_name = self._inflect_word(new_last_name, original_features)
             
             # Возвращаем результат
-            return anonymized_last_name
+            return anonymized_last_name.capitalize()
             
         except Exception:
             return "Некорректно введены данные"
@@ -270,22 +270,61 @@ class PDAnonymizer:
  
     def anonymize_birth_cert(self, cert: str) -> str:
         try:
-            m = re.fullmatch(r'([А-ЯЁ]{2})\s?(\d{6})', cert)
+            # Проверяем формат с римскими цифрами
+            m = re.fullmatch(r'([IVXLCDM]+)-([А-ЯЁ]{2})\s*№(\d{6})', cert, re.IGNORECASE)
             if not m:
                 return "Некорректно введены данные"
 
-            letters = ''.join(random.choice('АБВГДЕЖЗИКЛМНОПРСТУФХ') for _ in range(2))
+            # Генерируем новые римские цифры (от 1 до 20)
+            roman_numeral = self._int_to_roman(random.randint(1, 20))
+            letters = ''.join(random.choice('АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ') for _ in range(2))
             number = ''.join(str(random.randint(0, 9)) for _ in range(6))
-            return f"{letters} {number}"
+            return f"{roman_numeral}-{letters} №{number}"
         except Exception:
             return "Некорректно введены данные"
     
+    def _int_to_roman(self, num: int) -> str:
+        """Преобразование целого числа в римские цифры"""
+        val = [
+            1000, 900, 500, 400,
+            100, 90, 50, 40,
+            10, 9, 5, 4,
+            1
+        ]
+        syb = [
+            "M", "CM", "D", "CD",
+            "C", "XC", "L", "XL",
+            "X", "IX", "V", "IV",
+            "I"
+        ]
+        roman_num = ''
+        i = 0
+        while num > 0:
+            for _ in range(num // val[i]):
+                roman_num += syb[i]
+                num -= val[i]
+            i += 1
+        return roman_num
+    
     def anonymize_kladr(self, kladr: str) -> str:
         try:
-            if not kladr.isdigit() or not (13 <= len(kladr) <= 17):
+            # Удаляем все пробелы и проверяем формат
+            digits = re.sub(r'\s', '', kladr)
+            if not digits.isdigit() or len(digits) < 9:
                 return "Некорректно введены данные"
 
-            return ''.join(str(random.randint(0, 9)) for _ in range(len(kladr)))
+            # Генерируем новый код КЛАДР той же длины
+            new_digits = ''.join(str(random.randint(0, 9)) for _ in range(len(digits)))
+            
+            # Восстанавливаем исходный формат (с пробелами)
+            result = new_digits
+            if ' ' in kladr:
+                # Восстанавливаем пробелы на тех же позициях
+                for i, char in enumerate(kladr):
+                    if char == ' ' and i < len(result):
+                        result = result[:i] + ' ' + result[i:]
+            
+            return result
         except Exception:
             return "Некорректно введены данные"
 
