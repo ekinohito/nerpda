@@ -1,0 +1,33 @@
+=== BERTScore Statistics ===
+
+Mask Method:
+Mean Precision: 0.7667
+Mean Recall: 0.8442
+Mean F1: 0.8036
+Median F1: 0.8127
+25th percentile F1: 0.7651
+75th percentile F1: 0.8304
+
+Replace Method:
+Mean Precision: 0.9193
+Mean Recall: 0.9294
+Mean F1: 0.9243
+Median F1: 0.9236
+25th percentile F1: 0.9153
+75th percentile F1: 0.9336
+
+=== Comparison ===
+Mean F1 difference (Replace - Mask): 0.1207
+Median F1 difference (Replace - Mask): 0.1109
+
+Files where Replace method is better: 100 (100.0%)
+Files where Mask method is better: 0 (0.0%)
+Files with equal F1 scores: 0 (0.0%)
+
+Evaluation completed!
+Results saved to bert_scores.csv
+
+Conclusion:
+Higher BERTScore indicates better semantic similarity to the original text.
+Compare the F1 scores to determine which anonymization method preserves
+more of the original meaning while protecting personal data.
