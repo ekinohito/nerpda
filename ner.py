@@ -84,6 +84,13 @@ class RegexNER:
         # Регулярное выражение для кода КЛАДР
         # Формат: XX YY ZZZ QQ, где XX - код региона, YY - код района, ZZZ - код города/населенного пункта, QQ - код улицы
         self.kladr_pattern = re.compile(r'\b\d{2}\s*\d{2}\s*\d{3}\s*\d{2}\b')
+        
+        # Регулярное выражение для ИНН (10 цифр для юридических лиц, 12 цифр для физических лиц)
+        self.inn_pattern = re.compile(r'\b\d{10,12}\b')
+        
+        # Регулярное выражение для серии и номера паспорта
+        # Формат: XXXX XXXXXX (4 цифры серии, 6 цифр номера)
+        self.passport_pattern = re.compile(r'\b\d{4}\s*\d{6}\b')
     
     def luhn_algorithm(self, card_number):
         """Проверка номера карты по алгоритму Луна"""
@@ -115,6 +122,58 @@ class RegexNER:
         calculated_control = main_part % 11 % 10
         
         return calculated_control == control_digit
+    
+    def validate_inn(self, inn):
+        """Проверка ИНН"""
+        inn = inn.replace(' ', '').replace('-', '')
+        
+        if not inn.isdigit():
+            return False
+        
+        # Проверка длины ИНН
+        if len(inn) not in [10, 12]:
+            return False
+        
+        # Проверка контрольных сумм
+        if len(inn) == 10:
+            # Для юридических лиц
+            coefficients = [2, 4, 10, 3, 5, 9, 4, 6, 8]
+            control_sum = sum(int(inn[i]) * coefficients[i] for i in range(9))
+            control_digit = control_sum % 11 % 10
+            return control_digit == int(inn[9])
+        elif len(inn) == 12:
+            # Для физических лиц
+            # Первая контрольная цифра
+            coefficients1 = [7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+            control_sum1 = sum(int(inn[i]) * coefficients1[i] for i in range(10))
+            control_digit1 = control_sum1 % 11 % 10
+            
+            # Вторая контрольная цифра
+            coefficients2 = [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+            control_sum2 = sum(int(inn[i]) * coefficients2[i] for i in range(11))
+            control_digit2 = control_sum2 % 11 % 10
+            
+            return control_digit1 == int(inn[10]) and control_digit2 == int(inn[11])
+        
+        return False
+    
+    def validate_passport(self, passport):
+        """Проверка серии и номера паспорта"""
+        passport = passport.replace(' ', '').replace('-', '')
+        
+        if not passport.isdigit() or len(passport) != 10:
+            return False
+        
+        # Проверка серии (первые 4 цифры)
+        series = passport[:4]
+        # Проверка номера (последние 6 цифр)
+        number = passport[4:]
+        
+        # Базовая проверка - все цифры и правильная длина
+        # В реальной системе можно добавить более сложные проверки
+        # Например, проверку по спискам действующих серий паспортов
+        
+        return True
     
     def extract_entities(self, text):
         result = []
@@ -148,6 +207,22 @@ class RegexNER:
         for match in self.kladr_pattern.finditer(text):
             result.append(['KLADR', 'valid_kladr', match.start(), match.end()])
         
+        # Поиск ИНН
+        for match in self.inn_pattern.finditer(text):
+            inn = match.group().replace(' ', '').replace('-', '')
+            if self.validate_inn(inn):
+                result.append(['INN', 'valid_inn', match.start(), match.end()])
+            else:
+                result.append(['INN', 'invalid_inn', match.start(), match.end()])
+        
+        # Поиск серий и номеров паспортов
+        for match in self.passport_pattern.finditer(text):
+            passport = match.group().replace(' ', '').replace('-', '')
+            if self.validate_passport(passport):
+                result.append(['PASSPORT', 'valid_passport', match.start(), match.end()])
+            else:
+                result.append(['PASSPORT', 'invalid_passport', match.start(), match.end()])
+        
         return result
 
 
@@ -159,6 +234,14 @@ if __name__ == "__main__":
     regex_ner = RegexNER()
     text = """
     Регистрация ИП: Виноградов Никита Олегович, ОГРНИП 255547853460739, ИНН 7801920588. Адрес по КЛАДР: 27 328 191 574. Email для связи: никита764@list.ru. Зарплатный проект: сотрудник Виноградов Никита Олегович, ИНН 7801920588, карта 1558 5701 8528 1280. Код КЛАДР для налоговой: 27 328 191 574. Клиент Виноградов Никита Олегович предоставил документы: паспорт 3255 141253, ИНН 7801920588, свидетельство о рождении X-VI №901709. Регистрация в системе: пользователь Виноградов Никита Олегович, email никита764@list.ru, ИНН 7801920588, ОГРНИП 255547853460739 (если ИП). Для верификации необходимы данные: Виноградов Никита Олегович, ИНН 7801920588, паспорт 3255 141253, email никита764@list.ru, IP-адрес 76.79.127.227. Данные предпринимателя: Виноградов Никита Олегович, ОГРНИП 255547853460739. Банковская карта 1558 5701 8528 1280. ИНН 7801920588. Адрес по КЛАДР: 27 328 191 574.
+    
+    Тестовые данные для проверки новых функций:
+    - ИНН юридического лица (10 цифр): 7805287894
+    - ИНН физического лица (12 цифр): 500100732259
+    - Неверный ИНН: 1234567890
+    - Паспорт: 4509 123456
+    - Паспорт без пробелов: 4509123456
+    - Неверный паспорт: 12345 67890
     """
     names = ner.extract_names(text)
     entities = regex_ner.extract_entities(text)
