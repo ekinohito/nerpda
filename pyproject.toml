@@ -1,0 +1,25 @@
+[project]
+name = "nerpda"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "deeppavlov>=1.7.0",
+    "protobuf<=3.20",
+    'pytorch-crf==0.7.*',
+    'torch>=1.6.0,<1.14.0',
+    'protobuf<=3.20',
+    'transformers>=4.13.0,<4.25.0;python_version<"3.8"',
+    'transformers==4.30.0;python_version>="3.8"',
+    'sentencepiece==0.2.0',
+    "ru-core-news-sm",
+    "en-core-web-sm",
+    "spacy>=3.5.4",
+    "natasha>=1.6.0",
+    "faker>=39.0.0",
+]
+
+[tool.uv.sources]
+ru-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.5.0/ru_core_news_sm-3.5.0-py3-none-any.whl" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0-py3-none-any.whl" }
